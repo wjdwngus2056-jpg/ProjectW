@@ -1,3 +1,20 @@
+### Rider ###
+
+# Cache Directory
+.idea
+
+# Solution and Project Files
+*.csproj
+*.sln.DotSettings
+*.sln.DotSettings.user
+*.uproject.DotSettings
+*.uproject.DotSettings.user
+
+#Rider IDE plugin
+Plugins/Developer/RiderLink/
+**/RiderLink/
+
+### UnrealEngine ###
 # Visual Studio 2015 user specific files
 .vs/
 
@@ -40,7 +57,6 @@
 *.sdf
 *.VC.db
 *.VC.opendb
-.vsconfig
 
 # Precompiled Assets
 SourceArt/**/*.png
@@ -48,7 +64,7 @@ SourceArt/**/*.tga
 
 # Binary Files
 Binaries/*
-Plugins/**/Binaries/*
+Plugins/*/Binaries/*
 
 # Builds
 Build/*
@@ -69,7 +85,26 @@ Saved/*
 
 # Compiled source files for the engine to use
 Intermediate/*
-Plugins/**/Intermediate/*
+Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+#Content Asset
+Content/Assets/*
+Content/SubstrateMaterials/*
+
+#Tool
+Tool/*
+
+#Content TestSpace
+Content/TestSpace/*
+!Content/TestSpace/.gitkeep
+
+#Source Test
+Source/NeoSanctum/Test
+
+#Plugins
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+Plugins/*/Saved/
