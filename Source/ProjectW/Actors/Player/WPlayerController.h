@@ -3,9 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WPlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "WPlayerController.generated.h"
-	
+
+class UInputMappingContext;
+class UInputAction;
+class UWGameplayInputComponent;
 /**
  * 
  */
@@ -19,5 +23,11 @@ public:
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> MainMappingContext;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> MoveAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> LookAction;
 };

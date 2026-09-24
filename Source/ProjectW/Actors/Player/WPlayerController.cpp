@@ -2,3 +2,11 @@
 
 
 #include "WPlayerController.h"
+
+AWPlayerController::AWPlayerController()
+	: MainMappingContext(nullptr),
+	  MoveAction(nullptr),
+	  LookAction(nullptr)
+{
+	bShowMouseCursor = true;
+}

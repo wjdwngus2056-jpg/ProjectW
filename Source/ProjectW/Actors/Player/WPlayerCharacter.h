@@ -17,14 +17,17 @@ class PROJECTW_API AWPlayerCharacter : public ACharacter
 
 public:
 	AWPlayerCharacter();
-
+	
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
+public:
+	void SetMovementReferenceYaw(float NewYaw);
+	
 private:
-	void PlayerMove(const FInputActionValue& value);
+	void OnMoveAction(const FInputActionValue& value);
+	void OnLookAction(const FInputActionValue& value);
 	
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -32,4 +35,8 @@ private:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> MainCamera;
+	
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	float MovementReferenceYaw = 0.0f;
 };
