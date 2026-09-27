@@ -6,9 +6,7 @@
 #include "EnhancedInputComponent.h"
 #include "WPlayerController.h"
 #include "Camera/CameraComponent.h"
-#include "DataWrappers/ChaosVDParticleDataWrapper.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "ProfilingDebugging/SpatialTrace.h"
 
 AWPlayerCharacter::AWPlayerCharacter()
 {

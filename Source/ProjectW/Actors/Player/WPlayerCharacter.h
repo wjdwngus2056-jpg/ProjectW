@@ -29,14 +29,14 @@ private:
 	void OnMoveAction(const FInputActionValue& value);
 	void OnLookAction(const FInputActionValue& value);
 	
-private:
+public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<USpringArmComponent> SpringArmComp;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> MainCamera;
 	
-private:
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	float MovementReferenceYaw = 0.0f;
 };

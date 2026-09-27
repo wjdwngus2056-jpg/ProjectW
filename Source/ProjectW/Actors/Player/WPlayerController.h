@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WPlayerController.h"
 #include "GameFramework/PlayerController.h"
 #include "WPlayerController.generated.h"
 
