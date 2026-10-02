@@ -20,6 +20,9 @@ class PROJECTW_API AWPlayerController : public APlayerController
 public:
 	AWPlayerController();
 	
+protected:
+	virtual void BeginPlay() override;
+	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> MainMappingContext;
