@@ -4,9 +4,9 @@
 #include "WPlayerCharacter.h"
 
 #include "EnhancedInputComponent.h"
-#include "WPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "ProjectW/Core/Framework/WPlayerController.h"
 
 AWPlayerCharacter::AWPlayerCharacter()
 {
