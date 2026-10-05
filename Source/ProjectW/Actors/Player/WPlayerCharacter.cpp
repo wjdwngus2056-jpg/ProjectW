@@ -5,6 +5,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "ProjectW/Core/Framework/WPlayerController.h"
 
@@ -22,6 +23,11 @@ AWPlayerCharacter::AWPlayerCharacter()
 	MainCamera = CreateDefaultSubobject<UCameraComponent>(FName("MainCamera"));
 	MainCamera->SetupAttachment(SpringArmComp);
 	MainCamera->bUsePawnControlRotation = false;
+	
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	GetCharacterMovement()->RotationRate =
+		FRotator(0.0f, 720.0f, 0.0f);
 }
 
 void AWPlayerCharacter::BeginPlay()
@@ -41,13 +47,6 @@ void AWPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 				ETriggerEvent::Triggered,
 				this,
 				&AWPlayerCharacter::OnMoveAction
-			);
-
-			IC->BindAction(
-				PC->LookAction,
-				ETriggerEvent::Triggered,
-				this,
-				&AWPlayerCharacter::OnLookAction
 			);
 		}
 	}
@@ -71,8 +70,4 @@ void AWPlayerCharacter::OnMoveAction(const FInputActionValue& value)
 		.RotateVector(FVector(MoveInput.X, MoveInput.Y, 0.0f)).GetClampedToMaxSize(1.0f);
 
 	AddMovementInput(Direction);
-}
-
-void AWPlayerCharacter::OnLookAction(const FInputActionValue& value)
-{
 }

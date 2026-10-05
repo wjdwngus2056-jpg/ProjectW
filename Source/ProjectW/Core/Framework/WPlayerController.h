@@ -22,6 +22,9 @@ public:
 	
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	
+	void LookCursor();
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -29,7 +32,4 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	TObjectPtr<UInputAction> LookAction;
 };
