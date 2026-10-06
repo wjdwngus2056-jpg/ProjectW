@@ -6,9 +6,7 @@
 #include "GameFramework/GameMode.h"
 #include "WFireStationGameMode.generated.h"
 
-/**
- * 
- */
+/** 거점맵에서 사용하는 게임모드 */
 UCLASS()
 class PROJECTW_API AWFireStationGameMode : public AGameMode
 {

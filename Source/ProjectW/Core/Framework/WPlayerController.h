@@ -9,9 +9,8 @@
 class UInputMappingContext;
 class UInputAction;
 class UWGameplayInputComponent;
-/**
- * 
- */
+
+/** 플레이어 컨트롤러 */
 UCLASS()
 class PROJECTW_API AWPlayerController : public APlayerController
 {
@@ -24,6 +23,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	
+	/** 캐릭터가 마우스 커서 위치를 보도록 보간 회전 */
 	void LookCursor();
 	
 public:

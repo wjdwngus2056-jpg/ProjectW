@@ -10,6 +10,7 @@ struct FInputActionValue;
 class UCameraComponent;
 class USpringArmComponent;
 
+/** 플레이어 캐릭터 */
 UCLASS()
 class PROJECTW_API AWPlayerCharacter : public ACharacter
 {
@@ -26,8 +27,8 @@ public:
 	void SetMovementReferenceYaw(float NewYaw);
 	
 private:
+	/** 캐릭터의 이동 */
 	void OnMoveAction(const FInputActionValue& value);
-	void OnLookAction(const FInputActionValue& value);
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -37,6 +38,7 @@ public:
 	TObjectPtr<UCameraComponent> MainCamera;
 	
 public:
+	/** 캐릭터 이동 시 기준이 될 Yaw 각도 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
 	float MovementReferenceYaw = 0.0f;
 };
