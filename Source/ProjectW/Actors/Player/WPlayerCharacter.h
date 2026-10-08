@@ -24,11 +24,15 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 public:
+	AActor* FindInteractionTarget() const;	
 	void SetMovementReferenceYaw(float NewYaw);
 	
 private:
 	/** 캐릭터의 이동 */
 	void OnMoveAction(const FInputActionValue& value);
+	
+	/** 상호작용 */
+	void OnInteractionAction(const FInputActionValue& value);
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")

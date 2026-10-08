@@ -8,7 +8,8 @@
 
 AWPlayerController::AWPlayerController()
 	: MainMappingContext(nullptr),
-	  MoveAction(nullptr)
+	  MoveAction(nullptr),
+	  InteractionAction(nullptr)
 {
 	bShowMouseCursor = true;
 }
@@ -74,17 +75,17 @@ void AWPlayerController::LookCursor()
 		Origin + Direction * 100000.0f,
 		AimPlane
 	);
-	
+
 	FVector AimDirection = AimPoint - PawnLocation;
 	AimDirection.Z = 0.0f;
-	
+
 	constexpr float AimDeadZone = 30.0f;
-	
+
 	if (AimDirection.SizeSquared2D() <= FMath::Square(AimDeadZone))
 	{
 		return;
 	}
-	
+
 	const float TargetYaw = AimDirection.Rotation().Yaw;
 	SetControlRotation(FRotator(0.0f, TargetYaw, 0.0f));
 }

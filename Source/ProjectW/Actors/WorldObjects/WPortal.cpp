@@ -4,23 +4,51 @@
 #include "WPortal.h"
 
 
-// Sets default values
 AWPortal::AWPortal()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
+bool AWPortal::CanInteract(AActor* Interactor) const
+{
+	if (!IsValid(Interactor) || bHasInteracted)
+	{
+		return false;
+	}
+
+	const float DistanceSquared = FVector::DistSquared(
+		GetActorLocation(),
+		Interactor->GetActorLocation()
+	);
+	
+	return DistanceSquared <= FMath::Square(InteractionDistance);
+}
+
+bool AWPortal::TryInteract(AActor* Interactor)
+{
+	if (!CanInteract(Interactor))
+	{
+		return false;
+	}
+	
+	bHasInteracted = true;
+	
+	UE_LOG(LogTemp, Log, TEXT("%s 포탈 작동 시작"), *GetName());
+	
+	return true;
+}
+
+FText AWPortal::GetInteractionText(AActor* Interactor) const
+{
+	return NSLOCTEXT("Interaction", "Activate", "포탈작동");
+}
+
 void AWPortal::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
-// Called every frame
 void AWPortal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-

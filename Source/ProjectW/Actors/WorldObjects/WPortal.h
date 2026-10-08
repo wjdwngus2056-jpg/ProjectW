@@ -4,22 +4,31 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ProjectW/Actors/Interfaces/WInteractable.h"
 #include "WPortal.generated.h"
 
 UCLASS()
-class PROJECTW_API AWPortal : public AActor
+class PROJECTW_API AWPortal : public AActor, public IWInteractable
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	AWPortal();
+	
+	virtual bool CanInteract(AActor* Interactor) const override;
+	virtual bool TryInteract(AActor* Interactor) override;
+	virtual FText GetInteractionText(AActor* Interactor) const override;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	
+protected:
+	UPROPERTY(EditAnywhere, Category = "Interaction", meta = (ClampMin = "0"))
+	float InteractionDistance = 200.0f;
+	
+	UPROPERTY(VisibleInstanceOnly, Category = "Interaction")
+	bool bHasInteracted = false;
 };
