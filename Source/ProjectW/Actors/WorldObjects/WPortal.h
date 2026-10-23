@@ -31,4 +31,12 @@ protected:
 	
 	UPROPERTY(VisibleInstanceOnly, Category = "Interaction")
 	bool bHasInteracted = false;
+
+protected:
+	/** 출동 포탈은 선택된 미션으로, 복귀 등 일반 포탈은 고정 목적지로 이동한다. */
+	UPROPERTY(EditAnywhere, Category = "LevelTravel")
+	bool bUseSelectedMission = false;
+
+	UPROPERTY(EditAnywhere, Category = "LevelTravel", meta = (EditCondition = "!bUseSelectedMission"))
+	TSoftObjectPtr<UWorld> DestinationLevel;
 };
