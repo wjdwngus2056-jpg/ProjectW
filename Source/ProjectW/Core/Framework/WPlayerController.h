@@ -18,6 +18,8 @@ class PROJECTW_API AWPlayerController : public APlayerController
 	
 public:
 	AWPlayerController();
+
+	bool TryGetCursorAimDirection(FVector& OutAimDirection) const;
 	
 protected:
 	virtual void BeginPlay() override;
@@ -35,4 +37,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> InteractionAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> BasicAttackAction;
 };

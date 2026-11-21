@@ -9,6 +9,7 @@
 struct FInputActionValue;
 class UCameraComponent;
 class USpringArmComponent;
+class UWSkillComponent;
 
 /** 플레이어 캐릭터 */
 UCLASS()
@@ -22,6 +23,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void UnPossessed() override;
 	
 public:
 	AActor* FindInteractionTarget() const;	
@@ -33,6 +35,13 @@ private:
 	
 	/** 상호작용 */
 	void OnInteractionAction(const FInputActionValue& value);
+
+	void OnBasicAttackAction();
+	void OnBasicAttackReleased();
+	uint64 BasicAttackExecutionId = 0;
+
+	UPROPERTY(VisibleAnywhere, Category = "Ability")
+	TObjectPtr<UWSkillComponent> SkillComponent;
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
