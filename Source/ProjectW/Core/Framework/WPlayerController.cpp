@@ -4,7 +4,6 @@
 #include "WPlayerController.h"
 
 #include "EnhancedInputSubsystems.h"
-#include "Kismet/KismetMathLibrary.h"
 
 AWPlayerController::AWPlayerController()
 	: MainMappingContext(nullptr),
@@ -46,46 +45,43 @@ void AWPlayerController::Tick(float DeltaTime)
 
 void AWPlayerController::LookCursor()
 {
-	if (!IsLocalPlayerController())
+	FVector AimDirection;
+	if (TryGetCursorAimDirection(AimDirection))
 	{
-		return;
+		SetControlRotation(AimDirection.Rotation());
 	}
+}
 
-	APawn* PlayerPawn = GetPawn();
-	if (!PlayerPawn)
+bool AWPlayerController::TryGetCursorAimDirection(FVector& OutAimDirection) const
+{
+	const APawn* PlayerPawn = GetPawn();
+	if (!IsLocalPlayerController() || !PlayerPawn)
 	{
-		return;
+		return false;
 	}
 
 	FVector Origin;
 	FVector Direction;
-
-	if (!DeprojectMousePositionToWorld(Origin, Direction))
+	if (!DeprojectMousePositionToWorld(Origin, Direction) || FMath::IsNearlyZero(Direction.Z))
 	{
-		return;
+		return false;
 	}
 
+	// 카메라 광선이 캐릭터 높이의 수평면과 만나는 지점을 구합니다.
 	const FVector PawnLocation = PlayerPawn->GetActorLocation();
-
-	// 캐릭터 발밑 높이를 지나는 수평 조준면
-	const FPlane AimPlane(PawnLocation, FVector::UpVector);
-
-	const FVector AimPoint = FMath::LinePlaneIntersection(
-		Origin,
-		Origin + Direction * 100000.0f,
-		AimPlane
-	);
-
-	FVector AimDirection = AimPoint - PawnLocation;
-	AimDirection.Z = 0.0f;
-
-	constexpr float AimDeadZone = 30.0f;
-
-	if (AimDirection.SizeSquared2D() <= FMath::Square(AimDeadZone))
+	const double AimDistance = (PawnLocation.Z - Origin.Z) / Direction.Z;
+	if (!FMath::IsFinite(AimDistance) || AimDistance <= 0.0)
 	{
-		return;
+		return false;
 	}
 
-	const float TargetYaw = AimDirection.Rotation().Yaw;
-	SetControlRotation(FRotator(0.0f, TargetYaw, 0.0f));
+	const FVector AimOffset = Origin + Direction * AimDistance - PawnLocation;
+	constexpr float AimDeadZone = 30.0f;
+	if (AimOffset.ContainsNaN() || AimOffset.SizeSquared2D() <= FMath::Square(AimDeadZone))
+	{
+		return false;
+	}
+
+	OutAimDirection = AimOffset.GetSafeNormal2D();
+	return true;
 }

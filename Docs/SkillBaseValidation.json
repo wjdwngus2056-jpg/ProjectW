@@ -1,0 +1,80 @@
+{
+  "verifiedOn": "2026-11-21",
+  "timezone": "Asia/Seoul",
+  "engine": "5.8.3",
+  "branch": "feature/SkillBase",
+  "sourceRevision": "4fbd82a811c4cb50792ec4d5c9f95fd0ce7ae796",
+  "scope": "Single-player basic-slot Bolt execution and player/projectile collision separation",
+  "builds": [
+    {
+      "target": "ProjectWEditor",
+      "platform": "Win64",
+      "configuration": "Development",
+      "result": "Succeeded",
+      "localEvidence": "Saved/Logs/SkillBaseBaseline20261121.log"
+    },
+    {
+      "target": "ProjectW",
+      "platform": "Win64",
+      "configuration": "Development",
+      "result": "Succeeded",
+      "localEvidence": "Saved/Logs/SkillBaseGameBuild.log"
+    }
+  ],
+  "automation": {
+    "passed": 6,
+    "failed": 0,
+    "notRun": 0,
+    "tests": [
+      {
+        "name": "ProjectW.Skills.AssetWiring",
+        "result": "Success"
+      },
+      {
+        "name": "ProjectW.Skills.BoltDoesNotPushPlayer",
+        "result": "Success"
+      },
+      {
+        "name": "ProjectW.Skills.BoltProjectile",
+        "result": "Success"
+      },
+      {
+        "name": "ProjectW.Skills.CommitRevalidationAndCleanup",
+        "result": "Success"
+      },
+      {
+        "name": "ProjectW.Skills.InstanceIsolationAndDefinitions",
+        "result": "Success"
+      },
+      {
+        "name": "ProjectW.Skills.LifecycleAndStaleExecution",
+        "result": "Success"
+      }
+    ],
+    "localEvidence": "Saved/SkillBaseAutomation/index.json"
+  },
+  "standalonePlay": {
+    "mode": "UnrealEditor -game (uncooked)",
+    "map": "L_Prototype_FireStation",
+    "afterCollisionFix": {
+      "accepted": 6,
+      "projectilesFired": 6,
+      "normalEnds": 6,
+      "cooldownRejections": 3
+    },
+    "normalExit": true,
+    "localEvidence": "Saved/Logs/SkillBasePlayCollision.log"
+  },
+  "collisionRegression": {
+    "beforeFixBlockingOverlapFailures": 4,
+    "afterFix": "Success",
+    "nativeFourDirections": true,
+    "blueprintPlayerPositionUnchanged": true
+  },
+  "notVerified": [
+    "Cooked/packaged game",
+    "Complete prototype loop",
+    "Special attack gameplay",
+    "Networking"
+  ]
+}
