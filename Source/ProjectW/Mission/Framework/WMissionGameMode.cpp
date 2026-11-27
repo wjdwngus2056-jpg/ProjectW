@@ -23,6 +23,7 @@
 AWMissionGameMode::AWMissionGameMode()
 {
 	GameStateClass = AWMissionGameState::StaticClass();
+	// 테스트용 임시 UI의 기본값이다. BP 등에서 지정한 교체 HUD는 InitGame에서 유지한다.
 	HUDClass = AWMissionLoopHUD::StaticClass();
 	static ConstructorHelpers::FObjectFinder<UDataTable> Table(TEXT("/Game/Mission/Data/DT_MissionDefinition"));
 	MissionDataTable = Table.Object;
@@ -32,15 +33,20 @@ AWMissionGameMode::AWMissionGameMode()
 void AWMissionGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
 	Super::InitGame(MapName, Options, ErrorMessage);
-	// 잘못된 BP 설정에서도 오류를 조회할 GameState와 복귀 HUD는 제공한다.
+	// 잘못된 상태 클래스도 오류 결과를 담을 원본은 필요하므로 검증 실패를 기록하고 대체한다.
 	bInvalidStateClass = !GameStateClass || !GameStateClass->IsChildOf(AWMissionGameState::StaticClass());
 	if (bInvalidStateClass) GameStateClass = AWMissionGameState::StaticClass();
-	HUDClass = AWMissionLoopHUD::StaticClass();
+	// 미지정·생성 불가일 때만 임시 UI로 복구한다. 유효한 교체 HUD는 같은 도메인 API를 사용한다.
+	if (!HUDClass || HUDClass->HasAnyClassFlags(CLASS_Abstract))
+	{
+		HUDClass = AWMissionLoopHUD::StaticClass();
+	}
 	RequestedMissionId = UGameplayStatics::ParseOption(Options, TEXT("MissionId"));
 }
 
 void AWMissionGameMode::StartPlay()
 {
+	// 플레이가 열리기 전에 설정을 판정한다. 실패한 시도는 BeginPlay 후에도 입력을 잠근다.
 	InitializeMission();
 	Super::StartPlay();
 	if (GetGameState<AWMissionGameState>()->HasResult()) StopMissionGameplay();
@@ -51,9 +57,11 @@ void AWMissionGameMode::InitializeMission()
 {
 	AWMissionGameState* State = GetGameState<AWMissionGameState>();
 	check(State);
+	// 같은 월드의 중복 시작 요청이 새 시도 ID나 이전 확정 결과를 덮어쓰지 않게 한다.
 	if (State->AttemptId.IsValid()) return;
 	State->AttemptId = FGuid::NewGuid();
 	if (UGameInstance* Instance = GetGameInstance()) Instance->GetSubsystem<UWMissionResultTransfer>()->Clear();
+	// 초기화 실패도 결과 확정 경로를 사용하여 오류 표시와 복귀 요청을 유지한다.
 	auto Fail = [this](const TCHAR* Message) { FinalizeResult(false, FText::FromString(Message)); };
 	if (bInvalidStateClass) { Fail(TEXT("미션 GameState 설정이 올바르지 않습니다.")); return; }
 	// URL에서 넘어온 문자열은 이름으로 등록하기 전에 길이와 문자를 제한한다.
@@ -85,6 +93,7 @@ void AWMissionGameMode::InitializeMission()
 #if UE_BUILD_SHIPPING
 	Fail(TEXT("개발용 목표는 Shipping에서 사용할 수 없습니다.")); return;
 #else
+	// 이 브랜치는 실제 필수 목표 대신 정확히 하나의 개발용 목표 배치만 검증한다.
 	int32 Count = 0;
 	for (TActorIterator<AWDevelopmentMissionObjective> It(GetWorld()); It; ++It)
 	{
@@ -104,6 +113,7 @@ bool AWMissionGameMode::CanCompleteDevelopmentObjective(const AWDevelopmentMissi
 {
 	const AWMissionGameState* State = GetGameState<AWMissionGameState>();
 	const APawn* Pawn = Cast<APawn>(Interactor);
+	// HUD와 상호작용 가능 표시를 신뢰하지 않고 현재 시도의 대상·요청 조건을 검사한다.
 	return State && State->Phase == EWMissionPhase::InProgress && Source && RegisteredObjective.Get() == Source &&
 		Pawn && Pawn->IsPlayerControlled() && Pawn->GetWorld() == GetWorld() &&
 		FVector::DistSquared(Source->GetActorLocation(), Pawn->GetActorLocation()) <= FMath::Square(200.0f);
@@ -113,6 +123,7 @@ bool AWMissionGameMode::TryCompleteDevelopmentObjective(AWDevelopmentMissionObje
 {
 	if (!CanCompleteDevelopmentObjective(Source, Interactor)) return false;
 	GetGameState<AWMissionGameState>()->CompletedObjectives = 1;
+	// 왕복 확인을 위해 단일 목표 직후 결과를 내는 임시 경로다. 실제 목표는 탈출 수락과 분리한다.
 	return FinalizeResult(true, NSLOCTEXT("Mission", "PrototypeDone", "개발용 목표를 완료했습니다."));
 }
 
@@ -120,6 +131,7 @@ bool AWMissionGameMode::FinalizeResult(bool bSucceeded, const FText& Message)
 {
 	AWMissionGameState* State = GetGameState<AWMissionGameState>();
 	if (!State || State->bHasResult || (State->Phase != EWMissionPhase::Preparing && State->Phase != EWMissionPhase::InProgress)) return false;
+	// 먼저 결과를 확정한 뒤 실행을 중단하여 중복 보고나 정리 중 재진입이 결과를 바꾸지 못하게 한다.
 	State->Phase = bSucceeded ? EWMissionPhase::Succeeded : EWMissionPhase::Failed;
 	State->bHasResult = true;
 	State->Result.AttemptId = State->AttemptId;
@@ -135,6 +147,7 @@ bool AWMissionGameMode::FinalizeResult(bool bSucceeded, const FText& Message)
 
 void AWMissionGameMode::StopMissionGameplay()
 {
+	// 캐릭터 입력과 스킬만 닫는다. 초기화 실패와 정상 결과 모두 HUD의 복귀 입력은 살아 있어야 한다.
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		APlayerController* Controller = It->Get();
@@ -157,6 +170,7 @@ bool AWMissionGameMode::CanReturnToStation() const
 bool AWMissionGameMode::TryReturnToStation(APlayerController* Requester)
 {
 	if (!CanReturnToStation() || !IsValid(Requester) || Requester->GetWorld() != GetWorld() || !Requester->IsLocalController()) return false;
+	// 테스트용 즉시 복귀도 결과 확정과 분리한다. 목적지를 확인하기 전에는 이동 잠금을 걸지 않는다.
 	AWMissionGameState* State = GetGameState<AWMissionGameState>();
 	if (FireStationLevel.IsNull() || !FPackageName::DoesPackageExist(FireStationLevel.ToSoftObjectPath().GetLongPackageName()))
 	{
@@ -165,6 +179,7 @@ bool AWMissionGameMode::TryReturnToStation(APlayerController* Requester)
 	}
 	if (UGameInstance* Instance = GetGameInstance()) Instance->GetSubsystem<UWMissionResultTransfer>()->Store(State->Result);
 	State->TravelError = FText::GetEmpty();
+	// 실제 이동 전에 상태를 잠가 같은 프레임의 반복 입력을 거부한다.
 	State->Phase = EWMissionPhase::Returning;
 	UE_LOG(LogTemp, Log, TEXT("MissionLoop Returning Attempt=%s"), *State->AttemptId.ToString());
 	UGameplayStatics::OpenLevelBySoftObjectPtr(this, FireStationLevel, true);
@@ -176,6 +191,7 @@ void AWMissionGameMode::HandleTravelFailure(UWorld* World, ETravelFailure::Type 
 	if (World != GetWorld()) return;
 	AWMissionGameState* State = GetGameState<AWMissionGameState>();
 	if (!State || State->Phase != EWMissionPhase::Returning) return;
+	// 확정 결과는 바꾸지 않고 이동 잠금과 전달 대기만 복구하여 같은 시도로 복귀를 재시도한다.
 	State->Phase = State->Result.bSucceeded ? EWMissionPhase::Succeeded : EWMissionPhase::Failed;
 	State->TravelError = FText::FromString(FString::Printf(TEXT("복귀 실패: %s. R로 다시 시도하세요."), *Error));
 	if (UGameInstance* Instance = GetGameInstance()) Instance->GetSubsystem<UWMissionResultTransfer>()->Clear();
@@ -183,6 +199,7 @@ void AWMissionGameMode::HandleTravelFailure(UWorld* World, ETravelFailure::Type 
 
 void AWMissionGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// 월드별 GameMode 수명을 넘어 이전 시도의 콜백이 남지 않게 한다.
 	if (GEngine) GEngine->OnTravelFailure().Remove(TravelFailureHandle);
 	Super::EndPlay(EndPlayReason);
 }

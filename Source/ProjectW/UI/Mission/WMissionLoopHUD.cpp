@@ -14,6 +14,7 @@
 void AWMissionLoopHUD::BeginPlay()
 {
 	Super::BeginPlay();
+	// 캐릭터와 입력 수명을 분리하여 초기화 실패 결과에서도 복귀를 요청할 수 있게 한다.
 	if (PlayerOwner && PlayerOwner->IsLocalController())
 	{
 		EnableInput(PlayerOwner);
@@ -23,6 +24,7 @@ void AWMissionLoopHUD::BeginPlay()
 
 void AWMissionLoopHUD::RequestReturn()
 {
+	// 테스트용 즉시 복귀 요청만 전달한다. 화면이 성공이나 이동 허용 여부를 결정하지 않는다.
 	if (AWMissionGameMode* Mode = GetWorld()->GetAuthGameMode<AWMissionGameMode>()) Mode->TryReturnToStation(PlayerOwner);
 }
 
@@ -36,6 +38,7 @@ void AWMissionLoopHUD::DrawHUD()
 {
 	Super::DrawHUD();
 	if (!Canvas || !PlayerOwner) return;
+	// 화면 교체 뒤에도 같은 GameState 조회와 GameMode 요청 계약을 사용한다.
 	const AWMissionGameState* State = GetWorld()->GetGameState<AWMissionGameState>();
 	const AWFireStationGameMode* Station = GetWorld()->GetAuthGameMode<AWFireStationGameMode>();
 	float Y = 26.0f;
@@ -44,7 +47,9 @@ void AWMissionLoopHUD::DrawHUD()
 		DrawText(Text, Color, 30.0f, Y, GEngine->GetMediumFont(), 1.1f);
 		Y += 30.0f;
 	};
-	DrawRect(FLinearColor(0.01f, 0.02f, 0.03f, 0.86f), 16.0f, 16.0f, Canvas->SizeX - 32.0f, State && State->HasResult() ? 290.0f : 180.0f);
+	// 임시 UI 표시를 별도 첫 줄로 두고, 안내·버튼·클릭 영역을 같은 행 간격만큼 함께 내린다.
+	DrawRect(FLinearColor(0.01f, 0.02f, 0.03f, 0.86f), 16.0f, 16.0f, Canvas->SizeX - 32.0f, State && State->HasResult() ? 320.0f : 210.0f);
+	Line(TEXT("[테스트용 임시 UI] 목표·즉시 복귀 확인"), FLinearColor::Yellow);
 	if (State && State->HasResult())
 	{
 		const FWMissionResult Result = State->GetResult();
@@ -60,7 +65,8 @@ void AWMissionLoopHUD::DrawHUD()
 		{
 			const FVector2D Position(30.0f, Y + 12.0f);
 			DrawRect(FLinearColor(0.08f, 0.28f, 0.4f, 1.0f), Position.X, Position.Y, 290.0f, 48.0f);
-			DrawText(TEXT("[R] 소방서로 복귀   (클릭)"), FLinearColor::White, Position.X + 12, Position.Y + 12, GEngine->GetMediumFont());
+			DrawText(TEXT("[R] 소방서 즉시 복귀 (클릭)"), FLinearColor::White, Position.X + 12, Position.Y + 12, GEngine->GetMediumFont());
+			// 새 표시 줄을 반영한 버튼 좌표를 그대로 사용해 보이는 영역과 클릭 영역을 맞춘다.
 			AddHitBox(Position, FVector2D(290, 48), TEXT("ReturnToStation"), true);
 		}
 		return;
