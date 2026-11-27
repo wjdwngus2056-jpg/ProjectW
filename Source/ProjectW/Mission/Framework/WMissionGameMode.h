@@ -8,11 +8,11 @@
 #include "WMissionGameMode.generated.h"
 
 class UDataTable;
-class AWDevelopmentMissionObjective;
+class UWMissionObjectiveComponent;
 
 /**
  * 미션 초기화·목표 보고 검증·결과 확정·복귀를 담당한다. 상태 원본은 미션 GameState다.
- * 단일 개발용 목표 직후 성공·즉시 복귀를 허용하는 흐름은 이 브랜치의 임시 검증 경로다.
+ * 목표 보고는 진행만 집계한다. 테스트용 결과 확정 요청과 실제 복귀 요청은 각각 분리한다.
  */
 UCLASS()
 class PROJECTW_API AWMissionGameMode : public AGameMode
@@ -24,10 +24,16 @@ public:
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	/** 정의·맵·배치를 검증한 뒤 시작한다. 실패 결과에서도 복귀 UI를 사용할 수 있다. */
 	virtual void StartPlay() override;
-	/** 현재 시도에 등록된 개발용 목표와 플레이어·거리·진행 상태만 조회한다. */
-	bool CanCompleteDevelopmentObjective(const AWDevelopmentMissionObjective* Source, AActor* Interactor) const;
-	/** 보고를 재검증한 뒤 임시 단일 목표 완료를 기록한다. 현재는 바로 검증용 결과를 확정한다. */
-	bool TryCompleteDevelopmentObjective(AWDevelopmentMissionObjective* Source, AActor* Interactor);
+	/** 현재 시도의 등록 대상·ID·중복·진행 상태를 검사한다. 고유 행동 조건은 대상 책임이다. */
+	bool CanAcceptObjectiveReport(const UWMissionObjectiveComponent* Source, const FGuid& AttemptId) const;
+	/** 수락한 보고만 집계하며 결과 확정·탈출·맵 이동을 호출하지 않는다. */
+	bool TryReportObjectiveCompleted(UWMissionObjectiveComponent* Source, const FGuid& AttemptId);
+	/** 테스트용: 필수 목표가 끝난 현재 시도의 결과를 별도 요청으로 확정할 수 있는지 조회한다. */
+	UFUNCTION(BlueprintPure, Category = "Mission|Development")
+	bool CanFinishDevelopmentMission() const;
+	/** 테스트용 왕복 검증 경로. 실제 탈출 수락은 전체 루프 연결 작업에서 구현한다. Shipping은 거부한다. */
+	UFUNCTION(BlueprintCallable, Category = "Mission|Development")
+	bool TryFinishDevelopmentMission(APlayerController* Requester);
 	/** 교체 HUD도 사용하는 조회 계약. 결과가 확정되고 아직 복귀 중이 아닐 때만 허용한다. */
 	UFUNCTION(BlueprintPure, Category = "Mission")
 	bool CanReturnToStation() const;
@@ -50,6 +56,7 @@ private:
 	void HandleTravelFailure(UWorld* World, ETravelFailure::Type Type, const FString& Error);
 	FString RequestedMissionId;
 	bool bInvalidStateClass = false;
-	TWeakObjectPtr<AWDevelopmentMissionObjective> RegisteredObjective;
+	/** 초기화 때 고정한 대상만 현재 시도에 보고할 수 있다. 종료 시 월드와 함께 제거된다. */
+	TMap<FName, TWeakObjectPtr<UWMissionObjectiveComponent>> RegisteredObjectives;
 	FDelegateHandle TravelFailureHandle;
 };
