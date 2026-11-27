@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2026 TeamW. All Rights Reserved.
+// Copyright (C) 2026 TeamW. All Rights Reserved.
 
 
 #include "WMissionGameMode.h"
@@ -13,7 +13,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Misc/PackageName.h"
 #include "ProjectW/AbilitySystem/Components/WSkillComponent.h"
-#include "ProjectW/Actors/WorldObjects/WDevelopmentMissionObjective.h"
+#include "ProjectW/Mission/Objectives/WMissionObjectiveComponent.h"
 #include "ProjectW/Mission/Data/WMissionDefinition.h"
 #include "ProjectW/Mission/Framework/WMissionGameState.h"
 #include "ProjectW/Mission/Travel/WMissionResultTransfer.h"
@@ -82,7 +82,7 @@ void AWMissionGameMode::InitializeMission()
 		Fail(TEXT("미션 정의 테이블이 올바르지 않습니다.")); return;
 	}
 	const FWMissionDefinition* Definition = MissionDataTable->FindRow<FWMissionDefinition>(State->MissionId, TEXT("Mission initialization"), false);
-	if (!Definition || Definition->MissionLevel.IsNull() || Definition->DevelopmentObjectiveId.IsNone())
+	if (!Definition || Definition->MissionLevel.IsNull() || Definition->RequiredObjectiveIds.IsEmpty())
 	{
 		Fail(TEXT("MissionId 또는 목표 정의를 찾을 수 없습니다.")); return;
 	}
@@ -90,41 +90,78 @@ void AWMissionGameMode::InitializeMission()
 	{
 		Fail(TEXT("미션 정의의 목적지와 현재 맵이 다릅니다.")); return;
 	}
-#if UE_BUILD_SHIPPING
-	Fail(TEXT("개발용 목표는 Shipping에서 사용할 수 없습니다.")); return;
-#else
-	// 이 브랜치는 실제 필수 목표 대신 정확히 하나의 개발용 목표 배치만 검증한다.
-	int32 Count = 0;
-	for (TActorIterator<AWDevelopmentMissionObjective> It(GetWorld()); It; ++It)
+	// 정의와 배치를 먼저 모두 검증한다. 잘못된 설정에서는 일부 대상도 활성화하지 않는다.
+	TSet<FName> ExpectedIds;
+	for (FName Id : Definition->RequiredObjectiveIds)
 	{
-		++Count;
-		RegisteredObjective = *It;
+		if (Id.IsNone() || ExpectedIds.Contains(Id))
+		{
+			Fail(TEXT("필수 목표 ID가 비었거나 중복되었습니다.")); return;
+		}
+		ExpectedIds.Add(Id);
 	}
-	if (Count != 1 || RegisteredObjective->GetObjectiveId() != Definition->DevelopmentObjectiveId)
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 	{
-		Fail(TEXT("개발용 목표 배치가 잘못되었습니다. 목표 1개와 일치하는 ID가 필요합니다.")); return;
+		TInlineComponentArray<UWMissionObjectiveComponent*> Objectives(*It);
+		for (UWMissionObjectiveComponent* Objective : Objectives)
+		{
+			const FName Id = Objective->GetObjectiveId();
+			if (!ExpectedIds.Contains(Id) || RegisteredObjectives.Contains(Id))
+			{
+				Fail(TEXT("등록할 목표의 ID가 정의와 다르거나 중복되었습니다.")); return;
+			}
+			RegisteredObjectives.Add(Id, Objective);
+		}
 	}
+	if (RegisteredObjectives.Num() != ExpectedIds.Num())
+	{
+		Fail(TEXT("필수 목표의 배치가 누락되었습니다.")); return;
+	}
+	for (const auto& Entry : RegisteredObjectives) Entry.Value->BeginAttempt(State->AttemptId);
+	State->RequiredObjectives = ExpectedIds.Num();
 	State->Phase = EWMissionPhase::InProgress;
-	UE_LOG(LogTemp, Log, TEXT("MissionLoop Started Mission=%s Attempt=%s Progress=0/1"), *State->MissionId.ToString(), *State->AttemptId.ToString());
+	UE_LOG(LogTemp, Log, TEXT("MissionLoop Started Mission=%s Attempt=%s Progress=0/%d"),
+		*State->MissionId.ToString(), *State->AttemptId.ToString(), State->RequiredObjectives);
+}
+
+bool AWMissionGameMode::CanAcceptObjectiveReport(const UWMissionObjectiveComponent* Source, const FGuid& AttemptId) const
+{
+	const AWMissionGameState* State = GetGameState<AWMissionGameState>();
+	if (!State || State->Phase != EWMissionPhase::InProgress || !AttemptId.IsValid() || State->AttemptId != AttemptId ||
+		!IsValid(Source) || Source->GetWorld() != GetWorld() || !IsValid(Source->GetOwner())) return false;
+	// ID 일치만으로는 부족하다. 이 시도에 등록한 컴포넌트 자체와 완료 내역을 함께 확인한다.
+	const TWeakObjectPtr<UWMissionObjectiveComponent>* Registered = RegisteredObjectives.Find(Source->GetObjectiveId());
+	return Registered && Registered->Get() == Source && !Source->IsCompleted() &&
+		!State->CompletedObjectiveIds.Contains(Source->GetObjectiveId());
+}
+
+bool AWMissionGameMode::TryReportObjectiveCompleted(UWMissionObjectiveComponent* Source, const FGuid& AttemptId)
+{
+	if (!CanAcceptObjectiveReport(Source, AttemptId)) return false;
+	AWMissionGameState* State = GetGameState<AWMissionGameState>();
+	State->CompletedObjectiveIds.Add(Source->GetObjectiveId());
+	// 완료는 진행만 바꾼다. 다른 필수 목표와 실제 탈출 수락을 여기서 결과 확정과 결합하지 않는다.
+	UE_LOG(LogTemp, Log, TEXT("MissionLoop Objective Attempt=%s Objective=%s Progress=%d/%d"),
+		*AttemptId.ToString(), *Source->GetObjectiveId().ToString(), State->GetCompletedObjectives(), State->RequiredObjectives);
+	return true;
+}
+
+bool AWMissionGameMode::CanFinishDevelopmentMission() const
+{
+#if UE_BUILD_SHIPPING
+	return false;
+#else
+	const AWMissionGameState* State = GetGameState<AWMissionGameState>();
+	return State && State->Phase == EWMissionPhase::InProgress && State->AreRequiredObjectivesComplete();
 #endif
 }
 
-bool AWMissionGameMode::CanCompleteDevelopmentObjective(const AWDevelopmentMissionObjective* Source, AActor* Interactor) const
+bool AWMissionGameMode::TryFinishDevelopmentMission(APlayerController* Requester)
 {
-	const AWMissionGameState* State = GetGameState<AWMissionGameState>();
-	const APawn* Pawn = Cast<APawn>(Interactor);
-	// HUD와 상호작용 가능 표시를 신뢰하지 않고 현재 시도의 대상·요청 조건을 검사한다.
-	return State && State->Phase == EWMissionPhase::InProgress && Source && RegisteredObjective.Get() == Source &&
-		Pawn && Pawn->IsPlayerControlled() && Pawn->GetWorld() == GetWorld() &&
-		FVector::DistSquared(Source->GetActorLocation(), Pawn->GetActorLocation()) <= FMath::Square(200.0f);
-}
-
-bool AWMissionGameMode::TryCompleteDevelopmentObjective(AWDevelopmentMissionObjective* Source, AActor* Interactor)
-{
-	if (!CanCompleteDevelopmentObjective(Source, Interactor)) return false;
-	GetGameState<AWMissionGameState>()->CompletedObjectives = 1;
-	// 왕복 확인을 위해 단일 목표 직후 결과를 내는 임시 경로다. 실제 목표는 탈출 수락과 분리한다.
-	return FinalizeResult(true, NSLOCTEXT("Mission", "PrototypeDone", "개발용 목표를 완료했습니다."));
+	// 테스트용 결과 확정도 목표 보고와 별도 요청이다. 정식 탈출 조건을 구현한 것으로 취급하지 않는다.
+	if (!CanFinishDevelopmentMission() || !IsValid(Requester) || Requester->GetWorld() != GetWorld() ||
+		!Requester->IsLocalController() || !IsValid(Requester->GetPawn())) return false;
+	return FinalizeResult(true, NSLOCTEXT("Mission", "DevelopmentResult", "[테스트] 필수 목표 확인 후 결과를 확정했습니다. 실제 탈출은 후속 작업입니다."));
 }
 
 bool AWMissionGameMode::FinalizeResult(bool bSucceeded, const FText& Message)
@@ -137,11 +174,12 @@ bool AWMissionGameMode::FinalizeResult(bool bSucceeded, const FText& Message)
 	State->Result.AttemptId = State->AttemptId;
 	State->Result.MissionId = State->MissionId;
 	State->Result.bSucceeded = bSucceeded;
-	State->Result.CompletedObjectives = State->CompletedObjectives;
+	State->Result.CompletedObjectives = State->GetCompletedObjectives();
+	State->Result.RequiredObjectives = State->RequiredObjectives;
 	State->Result.Message = Message;
 	StopMissionGameplay();
-	UE_LOG(LogTemp, Log, TEXT("MissionLoop Result Attempt=%s Success=%d Progress=%d/1 Message=%s"),
-		*State->AttemptId.ToString(), bSucceeded, State->CompletedObjectives, *Message.ToString());
+	UE_LOG(LogTemp, Log, TEXT("MissionLoop Result Attempt=%s Success=%d Progress=%d/%d Message=%s"),
+		*State->AttemptId.ToString(), bSucceeded, State->GetCompletedObjectives(), State->RequiredObjectives, *Message.ToString());
 	return true;
 }
 

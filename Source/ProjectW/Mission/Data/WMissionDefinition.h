@@ -15,7 +15,7 @@ struct PROJECTW_API FWMissionDefinition : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
 	TSoftObjectPtr<UWorld> MissionLevel;
 
-	/** 왕복 검증용 단일 목표. 실제 구조·처치·진압 정의는 후속 작업이다. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Development")
-	FName DevelopmentObjectiveId = TEXT("PrototypeComplete");
+	/** 각 ID에 해당하는 월드 대상이 정확히 하나 필요하다. 실행 중 완료 상태와 분리한 정의다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission|Objectives")
+	TArray<FName> RequiredObjectiveIds = { TEXT("RescueCitizen") };
 };

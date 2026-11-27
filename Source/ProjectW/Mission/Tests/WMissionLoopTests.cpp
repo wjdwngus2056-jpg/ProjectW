@@ -8,7 +8,8 @@
 #include "Engine/DataTable.h"
 #include "GameFramework/PlayerController.h"
 #include "Misc/AutomationTest.h"
-#include "ProjectW/Actors/WorldObjects/WDevelopmentMissionObjective.h"
+#include "ProjectW/Actors/WorldObjects/WRescueTarget.h"
+#include "ProjectW/Mission/Objectives/WMissionObjectiveComponent.h"
 #include "ProjectW/Actors/Player/WPlayerCharacter.h"
 #include "ProjectW/AbilitySystem/Components/WSkillComponent.h"
 #include "ProjectW/Mission/Data/WMissionDefinition.h"
@@ -23,7 +24,7 @@ namespace
 		UWorld* World;
 		UGameInstance* Instance;
 		AWMissionGameMode* Mode;
-		AWDevelopmentMissionObjective* Target = nullptr;
+		AWRescueTarget* Target = nullptr;
 		AWPlayerCharacter* Player;
 		APlayerController* Controller;
 		FMissionTestWorld(const FString& MissionId = TEXT("Mission_Test"), int32 Targets = 1, bool bMissingTable = false, bool bWrongMap = false)
@@ -40,7 +41,7 @@ namespace
 			Definition.MissionLevel = bWrongMap ? TSoftObjectPtr<UWorld>(FSoftObjectPath(TEXT("/Game/Level/Wrong.Wrong"))) : TSoftObjectPtr<UWorld>(World);
 			Table->AddRow(TEXT("Mission_Test"), Definition);
 			FindFProperty<FObjectProperty>(Mode->GetClass(), TEXT("MissionDataTable"))->SetObjectPropertyValue_InContainer(Mode, bMissingTable ? nullptr : Table);
-			for (int32 Index = 0; Index < Targets; ++Index) Target = World->SpawnActor<AWDevelopmentMissionObjective>(FVector(100, 0, 100), FRotator::ZeroRotator);
+			for (int32 Index = 0; Index < Targets; ++Index) Target = World->SpawnActor<AWRescueTarget>(FVector(100, 0, 100), FRotator::ZeroRotator);
 			Controller = World->SpawnActor<APlayerController>();
 			Player = World->SpawnActor<AWPlayerCharacter>(FVector(0, 0, 100), FRotator::ZeroRotator);
 			World->InitializeActorsForPlay(URL);
@@ -80,13 +81,17 @@ bool FWMissionResultTest::RunTest(const FString& Parameters)
 		TestWorld.Player->SetActorLocation(FVector(-1000, 0, 100));
 		TestFalse(TEXT("Distant request rejected"), TestWorld.Target->TryInteract(TestWorld.Player));
 		TestWorld.Player->SetActorLocation(FVector(0, 0, 100));
-		AWDevelopmentMissionObjective* Rogue = TestWorld.World->SpawnActor<AWDevelopmentMissionObjective>();
+		AWRescueTarget* Rogue = TestWorld.World->SpawnActor<AWRescueTarget>();
 		TestFalse(TEXT("Unregistered target rejected"), Rogue->TryInteract(TestWorld.Player));
 		TestTrue(TEXT("Registered interaction completes"), TestWorld.Target->TryInteract(TestWorld.Player));
+		// 시민 구조는 목표만 완료한다. 왕복 결과는 별도 테스트 요청으로 확정한다.
+		TestTrue(TEXT("Citizen owns rescued state"), TestWorld.Target->IsRescued());
+		TestFalse(TEXT("Rescue alone does not finalize result"), State->HasResult());
+		TestTrue(TEXT("Development finish requested separately"), TestWorld.Mode->TryFinishDevelopmentMission(TestWorld.Controller));
 		const FWMissionResult Result = State->GetResult();
 		TestTrue(TEXT("Success result fixed"), Result.bSucceeded && Result.AttemptId == Previous);
 		TestEqual(TEXT("One completed target"), Result.CompletedObjectives, 1);
-		for (int32 Duplicate = 0; Duplicate < 5; ++Duplicate) TestFalse(TEXT("Repeated report rejected"), TestWorld.Mode->TryCompleteDevelopmentObjective(TestWorld.Target, TestWorld.Player));
+		for (int32 Duplicate = 0; Duplicate < 5; ++Duplicate) TestFalse(TEXT("Repeated report rejected"), TestWorld.Target->TryInteract(TestWorld.Player));
 		TestEqual(TEXT("No duplicate progress"), State->GetCompletedObjectives(), 1);
 		TestTrue(TEXT("Skills reject requests at result"), TestWorld.Player->FindComponentByClass<UWSkillComponent>()->TryActivateSlot(EWAbilitySlot::BasicAttack, FVector::ForwardVector).Status == EWAbilityRequestStatus::Unavailable);
 		TestTrue(TEXT("Return available"), TestWorld.Mode->CanReturnToStation());

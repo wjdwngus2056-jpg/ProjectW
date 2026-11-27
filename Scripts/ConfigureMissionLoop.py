@@ -31,16 +31,7 @@ for domain in ['FireStation', 'Mission']:
     world = worlds.get_editor_world()
     # 기존 맵별 BP GameMode를 명시하여 글로벌 기본 GameMode에 의존하지 않는다.
     world.get_world_settings().set_editor_property('default_game_mode', cls)
-    if domain == 'Mission':
-        objective_class = unreal.load_class(None, '/Script/ProjectW.WDevelopmentMissionObjective')
-        targets = [a for a in editor.get_all_level_actors() if a.get_class() == objective_class]
-        assert len(targets) <= 1
-        if not targets:
-            target = editor.spawn_actor_from_class(objective_class, unreal.Vector(250, 0, 60))
-            target.set_actor_label('DEV_CompleteMission')
-        else:
-            target = targets[0]
-        target.set_editor_property('objective_id', 'PrototypeComplete')
+    # 목표 배치는 최신 시민 구조 구성 스크립트가 담당한다.
     unreal.EditorLoadingAndSavingUtils.save_current_level()
     audit[domain] = {
         'game_mode': world.get_world_settings().get_editor_property('default_game_mode').get_path_name(),
@@ -50,3 +41,7 @@ for domain in ['FireStation', 'Mission']:
     }
 with open(root / 'Saved/MissionLoopConfiguredAssets.json', 'w', encoding='utf-8') as f:
     json.dump(audit, f, ensure_ascii=False, indent=2)
+
+# 초기 구성을 재생성할 때도 삭제된 개발용 큐브 대신 시민 1명을 배치한다.
+exec(compile((root / 'Scripts/ConfigureRescueObjective.py').read_text(encoding='utf-8'),
+             'ConfigureRescueObjective.py', 'exec'))

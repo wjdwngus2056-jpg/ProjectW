@@ -17,7 +17,7 @@
 #include "ProjectW/Actors/Player/WPlayerCharacter.h"
 #include "ProjectW/Actors/WorldObjects/WMissionPanel.h"
 #include "ProjectW/Actors/WorldObjects/WPortal.h"
-#include "ProjectW/Actors/WorldObjects/WDevelopmentMissionObjective.h"
+#include "ProjectW/Actors/WorldObjects/WRescueTarget.h"
 #include "ProjectW/Core/Framework/WPlayerController.h"
 #include "ProjectW/FireStation/Framework/WFireStationGameMode.h"
 #include "ProjectW/Mission/Framework/WMissionGameState.h"
@@ -104,18 +104,27 @@ namespace
 				Test->TestTrue(TEXT("Redeploy issues fresh attempt ID"), State->GetAttemptId().IsValid() && State->GetAttemptId() != PreviousAttempt);
 				UWSkillComponent* Skills = Player->FindComponentByClass<UWSkillComponent>();
 				Test->TestTrue(TEXT("Existing Bolt fires on each new attempt"), Skills && Skills->TryActivateSlot(EWAbilitySlot::BasicAttack, FVector::RightVector).IsAccepted());
-				TActorIterator<AWDevelopmentMissionObjective> Objective(World);
+				TActorIterator<AWRescueTarget> Objective(World);
 				if (!Interact(Objective ? *Objective : nullptr)) return true;
 				Next(3); return false;
 			}
 			if (Stage == 3)
 			{
+				// 상호작용 주입 다음 프레임에 구조만 완료됐는지 확인한 뒤 별도로 결과를 요청한다.
+				if (Round < 3 && !State->HasResult())
+				{
+					if (State->GetCompletedObjectives() != 1) return false;
+					Test->TestTrue(TEXT("Rescue remains in progress"), State->GetPhase() == EWMissionPhase::InProgress);
+					AWMissionLoopHUD* HUD = Cast<AWMissionLoopHUD>(Controller->GetHUD());
+					if (!Test->TestNotNull(TEXT("Development request HUD"), HUD)) return true;
+					HUD->NotifyHitBoxClick(TEXT("DevelopmentFinish"));
+				}
 				if (!State->HasResult()) return false;
 				Test->TestEqual(TEXT("Confirmed expected result"), State->GetResult().bSucceeded, Round < 3);
 				Test->TestEqual(TEXT("Confirmed objective count"), State->GetCompletedObjectives(), Round < 3 ? 1 : 0);
 				Test->TestFalse(TEXT("Result contains explanation"), State->GetResult().Message.IsEmpty());
 				PreviousAttempt = State->GetAttemptId();
-				TActorIterator<AWDevelopmentMissionObjective> Objective(World);
+				TActorIterator<AWRescueTarget> Objective(World);
 				if (Objective) Test->TestFalse(TEXT("Repeated completion rejected"), Objective->TryInteract(Player));
 				Test->TestTrue(TEXT("Result blocks new Bolt requests"), Player->FindComponentByClass<UWSkillComponent>()->TryActivateSlot(EWAbilitySlot::BasicAttack, FVector::RightVector).Status == EWAbilityRequestStatus::Unavailable);
 				if (FParse::Param(FCommandLine::Get(), TEXT("MissionLoopScreenshots")))
