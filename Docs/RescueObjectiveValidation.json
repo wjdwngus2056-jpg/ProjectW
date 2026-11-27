@@ -1,0 +1,28 @@
+{
+  "base": "2e079ea",
+  "branch": "feature/RescueObjective",
+  "editor_build": {
+    "target": "ProjectWEditor Win64 Development",
+    "result": "passed",
+    "log": "Saved/Logs/RescueObjectiveEditorBuild.log"
+  },
+  "content_configuration": {
+    "result": "passed",
+    "target_count": 1,
+    "objective_id": "RescueCitizen",
+    "commandlet_exit_code": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "user_play": {
+    "windows_launched": 1,
+    "observed": "One ProjectW window showing objective 1/1 and separate development result with return button",
+    "confirmation": "pending"
+  },
+  "automation": "Existing fixtures migrated; no new suites or execution",
+  "cooking_and_packaging": "Not run",
+  "remaining": [
+    "User confirmation of prompt, one-time rescue, duplicate rejection and fresh attempt after redeploy",
+    "Actual extraction, other required goals, sequences and formal UI are later scope"
+  ]
+}
