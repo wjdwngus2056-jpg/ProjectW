@@ -1,0 +1,98 @@
+{
+  "editor": {
+    "succeeded": 9,
+    "failed": 0,
+    "notRun": 0,
+    "tests": [
+      {
+        "name": "ProjectW.MissionLoop.CompletionAndFreshAttempt",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.MissionLoop.InitializationErrors",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.MissionLoop.ResultTransferConsumedOnce",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.Skills.AssetWiring",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.Skills.BoltDoesNotPushPlayer",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.Skills.BoltProjectile",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.Skills.CommitRevalidationAndCleanup",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.Skills.InstanceIsolationAndDefinitions",
+        "state": "Success",
+        "errors": 0
+      },
+      {
+        "name": "ProjectW.Skills.LifecycleAndStaleExecution",
+        "state": "Success",
+        "errors": 0
+      }
+    ]
+  },
+  "standalone": {
+    "succeeded": 1,
+    "failed": 0,
+    "notRun": 0,
+    "tests": [
+      {
+        "name": "ProjectW.MissionLoop.PlayRoundTrip",
+        "state": "Success",
+        "errors": 0
+      }
+    ]
+  },
+  "attempts": [
+    {
+      "attemptId": "1AE2B2F3457785F76A1C8B9FA5858655",
+      "succeeded": true,
+      "completed": 1
+    },
+    {
+      "attemptId": "D251F0B74F921C1299F3D5912DEF38D4",
+      "succeeded": true,
+      "completed": 1
+    },
+    {
+      "attemptId": "487FEBC24B17D63E72A285B08560A36C",
+      "succeeded": true,
+      "completed": 1
+    },
+    {
+      "attemptId": "E7A2406541727AA1C3B21CAADA4B529B",
+      "succeeded": false,
+      "completed": 0
+    },
+    {
+      "attemptId": "945D7BE747F86059CC81DCA61D9BB611",
+      "succeeded": false,
+      "completed": 0
+    }
+  ],
+  "date": "2026-11-25",
+  "engine": "UE 5.8.3",
+  "scope": "Single-player development objective; actual rescue/combat/firefighting remain follow-up.",
+  "manualInput": "Not completed: Computer Use capture recovery failed; additional direct-input game launch was declined.",
+  "packaging": "One earlier Windows Development package succeeded; no final-source package or packaged play validation, per revised user workflow."
+}

@@ -6,6 +6,8 @@
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectW/FireStation/Framework/WFireStationGameMode.h"
+#include "ProjectW/Mission/Framework/WMissionGameMode.h"
+#include "GameFramework/Pawn.h"
 
 
 AWPortal::AWPortal()
@@ -42,6 +44,10 @@ bool AWPortal::CanInteract(AActor* Interactor) const
 		return GameMode && GameMode->CanStartSelectedMission();
 	}
 
+	if (const AWMissionGameMode* MissionMode = World->GetAuthGameMode<AWMissionGameMode>())
+	{
+		return MissionMode->CanReturnToStation();
+	}
 	return !DestinationLevel.IsNull();
 }
 
@@ -62,11 +68,17 @@ bool AWPortal::TryInteract(AActor* Interactor)
 	}
 	else
 	{
+		if (AWMissionGameMode* MissionMode = GetWorld()->GetAuthGameMode<AWMissionGameMode>())
+		{
+			APawn* Pawn = Cast<APawn>(Interactor);
+			return Pawn && MissionMode->TryReturnToStation(Cast<APlayerController>(Pawn->GetController()));
+		}
 		UGameplayStatics::OpenLevelBySoftObjectPtr(this, DestinationLevel, true, FString());
 	}
 
 	// 수락된 요청만 포탈을 사용한 상태로 기록한다.
-	bHasInteracted = true;
+	// 선택 미션 출동은 GameMode가 잠근다. 이동 실패 뒤 포탈도 재사용 가능해야 한다.
+	bHasInteracted = !bUseSelectedMission;
 	UE_LOG(LogTemp, Log, TEXT("%s 포탈 이동 요청 수락"), *GetName());
 
 	return true;

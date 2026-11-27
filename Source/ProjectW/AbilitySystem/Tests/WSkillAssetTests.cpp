@@ -23,7 +23,7 @@
 
 namespace
 {
-	int32 CountBolts(UWorld* World)
+	int32 CountAssetTestBolts(UWorld* World)
 	{
 		int32 Count = 0;
 		for (TActorIterator<AWBoltProjectile> It(World); It; ++It)
@@ -92,7 +92,7 @@ bool FWSkillAssetWiringTest::RunTest(const FString& Parameters)
 	Character->GetCharacterMovement()->SetMovementMode(MOVE_Flying);
 	const FVector BeforeShot = Character->GetActorLocation();
 	TestTrue(TEXT("Real asset slot launches"), Skills->TryActivateSlot(EWAbilitySlot::BasicAttack, FVector::ForwardVector).IsAccepted());
-	TestEqual(TEXT("Real asset spawns one Bolt"), CountBolts(TestWorld.World), 1);
+	TestEqual(TEXT("Real asset spawns one Bolt"), CountAssetTestBolts(TestWorld.World), 1);
 	for (TActorIterator<AWBoltProjectile> It(TestWorld.World); It; ++It)
 	{
 		TestEqual(TEXT("Spawned projectile class"), It->GetClass(), ProjectileClass);
@@ -110,10 +110,10 @@ bool FWSkillAssetWiringTest::RunTest(const FString& Parameters)
 		FVector(250.0, 0.0, 100.0), FRotator::ZeroRotator);
 	TestWorld.Advance(0.4f);
 	TestEqual(TEXT("Projectile BP hits once"), Target->HitCount, 1);
-	TestEqual(TEXT("Projectile BP ends on impact"), CountBolts(TestWorld.World), 0);
+	TestEqual(TEXT("Projectile BP ends on impact"), CountAssetTestBolts(TestWorld.World), 0);
 	TestTrue(TEXT("Real asset can fire again"), Skills->TryActivateSlot(EWAbilitySlot::BasicAttack, FVector::RightVector).IsAccepted());
 	TestWorld.Advance(2.2f);
-	TestEqual(TEXT("Projectile BP expires on miss"), CountBolts(TestWorld.World), 0);
+	TestEqual(TEXT("Projectile BP expires on miss"), CountAssetTestBolts(TestWorld.World), 0);
 	return true;
 }
 #endif

@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "Engine/EngineBaseTypes.h"
+#include "ProjectW/Mission/Data/WMissionRuntime.h"
 #include "WFireStationGameMode.generated.h"
 
 class UDataTable;
@@ -16,6 +18,11 @@ class PROJECTW_API AWFireStationGameMode : public AGameMode
 	GENERATED_BODY()
 
 public:
+	AWFireStationGameMode();
+	FName GetSelectedMissionId() const { return SelectedMissionId; }
+	bool HasLastResult() const { return bHasLastResult; }
+	const FWMissionResult& GetLastResult() const { return LastResult; }
+	FText GetTravelError() const { return TravelError; }
 	/** 미션 행이 존재할 때만 선택을 변경한다. 실패하면 기존 선택을 유지한다. */
 	bool SelectMission(FName MissionId);
 
@@ -26,6 +33,8 @@ public:
 	bool TryStartSelectedMission();
 
 protected:
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Mission")
 	TObjectPtr<UDataTable> MissionDataTable = nullptr;
 
@@ -38,4 +47,9 @@ protected:
 
 private:
 	const FWMissionDefinition* GetSelectedMissionDefinition() const;
+	void HandleTravelFailure(UWorld* World, ETravelFailure::Type Type, const FString& Error);
+	UPROPERTY(Transient) FWMissionResult LastResult;
+	UPROPERTY(Transient) FText TravelError;
+	bool bHasLastResult = false;
+	FDelegateHandle TravelFailureHandle;
 };
